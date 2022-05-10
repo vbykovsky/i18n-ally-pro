@@ -6,7 +6,7 @@ import { LanguageId } from '~/utils'
 class I18nextFramework extends Framework {
   id ='i18next'
   display = 'i18next'
-  namespaceDelimiter = ':'
+  namespaceDelimiter = '.'
 
   // both `/` and `:` should work as delimiter, #425
   namespaceDelimiters = [':', '/']
@@ -81,7 +81,8 @@ class I18nextFramework extends Framework {
 
     const ranges: ScopeRange[] = []
     const text = document.getText()
-    const reg = /useTranslation\(\s*\[?\s*['"`](.*?)['"`]/g
+
+    const reg = /useTranslation\(\s*\[?\s*['"`](.*)['"`]/g
 
     for (const match of text.matchAll(reg)) {
       if (match?.index == null)
@@ -101,7 +102,17 @@ class I18nextFramework extends Framework {
       }
     }
 
-    return ranges
+    return ranges.flatMap((range) => {
+      if (!range.namespace.includes('"'))
+        return range
+
+      return range.namespace.replaceAll(/\",( )?\"/ig, ',')
+        .split(',')
+        .map(namespace => ({
+          ...range,
+          namespace,
+        }))
+    })
   }
 }
 
