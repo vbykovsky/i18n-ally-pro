@@ -34,13 +34,18 @@ const config = {
     '@microsoft/typescript-etw': '_',
   },
   resolve: {
-    extensions: ['.ts', '.js'],
+    extensions: ['.ts', '.js', '.mjs'],
     plugins: [
       new TsconfigPathsPlugin(),
     ],
   },
   module: {
     rules: [
+      {
+        test: /\.mjs$/,
+        include: /node_modules/,
+        type: 'javascript/auto',
+      },
       {
         test: /\.ts$/,
         exclude: /node_modules/,

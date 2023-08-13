@@ -5,7 +5,7 @@ import { LanguageId } from '~/utils'
 class I18nextFramework extends Framework {
   id ='i18next'
   display = 'i18next'
-  namespaceDelimiter = ':'
+  namespaceDelimiter = '.'
 
   // both `/` and `:` should work as delimiter, #425
   namespaceDelimiters = [':', '/']

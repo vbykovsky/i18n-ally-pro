@@ -96,3 +96,12 @@ export function abbreviateNumber(value: number): string {
   result += suffixes[suffixNum]
   return result
 }
+
+export const ejectNamespaceFromKey = (namespaces: string[], key: string, namespaceDelimiter = '.'): { namespace?: string; namespacelessKey: string } => {
+  const keyPieces = key.split(namespaceDelimiter)
+
+  if (!namespaces.includes(keyPieces[0]))
+    return { namespacelessKey: key }
+
+  return { namespace: keyPieces[0], namespacelessKey: keyPieces.filter((_keyPiece, index) => index !== 0).join(namespaceDelimiter) }
+}

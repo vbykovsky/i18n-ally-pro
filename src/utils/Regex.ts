@@ -2,9 +2,10 @@ import { sortBy } from 'lodash'
 import { QUOTE_SYMBOLS } from '../meta'
 import { KeyInDocument, RewriteKeyContext } from '../core/types'
 import { ScopeRange } from '../frameworks/base'
-import { Log } from '.'
+import { Log } from './Log'
+import { ejectNamespaceFromKey } from './utils'
 import i18n from '~/i18n'
-import { CurrentFile, Config } from '~/core'
+import { CurrentFile, Config, Global } from '~/core'
 
 export function handleRegexMatch(
   text: string,
@@ -23,10 +24,18 @@ export function handleRegexMatch(
 
   const start = match.index + matchString.lastIndexOf(key)
   const end = start + key.length
-  const scope = scopes.find(s => s.start <= start && s.end >= end)
+
+  const validScopes = scopes.filter(s => s.start <= start && s.end >= end)
+
   const quoted = QUOTE_SYMBOLS.includes(text[start - 1])
 
-  const namespace = scope?.namespace || defaultNamespace
+  const namespaces = validScopes?.map(scope => scope.namespace) || [defaultNamespace]
+  const hasMultipleNamespaces = namespaces.length > 1
+
+  if (!hasMultipleNamespaces)
+    key = `${namespaces[0]}${Global.getNamespaceDelimiter()}${key}`
+
+  const { namespace, namespacelessKey } = ejectNamespaceFromKey(namespaces, key, Global.getNamespaceDelimiter())
 
   // prevent duplicated detection when multiple frameworks enables at the same time.
   if (starts.includes(start))
@@ -38,7 +47,7 @@ export function handleRegexMatch(
   const hasExplicitNamespace = namespaceDelimiters.some(delimiter => key.includes(delimiter))
 
   if (!hasExplicitNamespace && namespace)
-    key = `${namespace}.${key}`
+    key = `${namespace}${Global.getNamespaceDelimiter()}${namespacelessKey}`
 
   if (dotEnding || !key.endsWith('.')) {
     key = CurrentFile.loader.rewriteKeys(key, 'reference', {

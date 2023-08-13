@@ -1,5 +1,6 @@
 import { CompletionItemProvider, TextDocument, Position, CompletionItem, CompletionItemKind, languages } from 'vscode'
 import { ExtensionModule } from '~/modules'
+import { ejectNamespaceFromKey } from '~/utils'
 import { Global, KeyDetector, Loader, CurrentFile, LocaleTree, LocaleNode } from '~/core'
 
 class CompletionProvider implements CompletionItemProvider {
@@ -13,15 +14,29 @@ class CompletionProvider implements CompletionItemProvider {
     const loader: Loader = CurrentFile.loader
     const key = KeyDetector.getKey(document, position, true)
 
+    const scopes = Global.enabledFrameworks.flatMap(f => f.getScopeRange(document) || [])
+    const namespaces = scopes?.map(scope => scope.namespace) || []
+    const hasMultipleNamespaces = namespaces && namespaces.length > 1
+
     if (key === undefined)
       return
 
     if (!key) {
       return Object
         .values(CurrentFile.loader.keys)
+        .filter(key => namespaces.includes(key.split(Global.getNamespaceDelimiter())[0]))
         .map((key) => {
-          const item = new CompletionItem(key, CompletionItemKind.Text)
+          const { namespacelessKey } = ejectNamespaceFromKey(namespaces, key, Global.getNamespaceDelimiter())
+
+          return ({
+            key,
+            namespacelessKey: hasMultipleNamespaces ? key : namespacelessKey,
+          })
+        })
+        .map(({ key, namespacelessKey }) => {
+          const item = new CompletionItem(namespacelessKey, CompletionItemKind.Text)
           item.detail = loader.getValueByKey(key)
+
           return item
         })
     }
